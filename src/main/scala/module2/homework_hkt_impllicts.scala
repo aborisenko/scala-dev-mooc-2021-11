@@ -2,29 +2,43 @@ package module2
 
 object homework_hkt_impllicts{
 
-    /**
-      * 
-      * Доработать сигнатуру tupleF и реализовать его
-      * По итогу должны быть возможны подобные вызовы
-      *   val r1 = println(tupleF(optA, optB))
-      *   val r2 = println(tupleF(list1, list2))
-      * 
-      */
-    def tupleF[F[_], A, B](fa: F[A], fb: F[B]) = ???
+  /**
+   *
+   * Доработать сигнатуру tupleF и реализовать его
+   * По итогу должны быть возможны подобные вызовы
+   *   val r1 = println(tupleF(optA, optB))
+   *   val r2 = println(tupleF(list1, list2))
+   *
+   */
+  def tupleF[F[_], A, B](fa: F[A], fb: F[B])(implicit m: F[A] => Bindable[F,A],
+                                             m2:F[B] => Bindable[F,B]): F[(A,B)] = {
+    m(fa).flatMap( a => m2(fb).map( b => (a,b) ))
+  }
 
+  abstract class Bindable[F[_], A]( tt: F[A]) {
+    def map[B](f: A => B): F[B]
+    def flatMap[B](f: A => F[B]): F[B]
+  }
 
-    trait Bindable[F[_], A] {
-        def map[B](f: A => B): F[B]
-        def flatMap[B](f: A => F[B]): F[B]
+  def main(args: Array[String]): Unit = {
+
+    implicit def m[A]( arg: Option[A]): Bindable[Option, A] = new Bindable[Option, A](arg) {
+      override def map[B](f: A => B): Option[B] = arg.map(f)
+      override def flatMap[B](f: A => Option[B]): Option[B] = arg.flatMap(f)
     }
 
+    implicit def m2[A]( arg: List[A]): Bindable[List, A] = new Bindable[List, A]( arg) {
+      override def map[B](f: A => B): List[B] = arg.map(f)
+      override def flatMap[B](f: A => List[B]): List[B] = arg.flatMap(f)
+    }
 
-  val optA: Option[Int] = Some(1)
-  val optB: Option[Int] = Some(2)
+    val optA: Option[Int] = Some(1)
+    val optB: Option[Int] = Some(2)
 
-  val list1 = List(1, 2, 3)
-  val list2 = List(4, 5, 6)
+    val list1 = List(1, 2, 3)
+    val list2 = List(4, 5, 6)
 
-  val r1 = println(tupleF(optA, optB))
-  val r2 = println(tupleF(list1, list2))
+    val r1 = println(tupleF(optA, optB))
+    val r2 = println(tupleF(list1, list2))
+  }
 }
